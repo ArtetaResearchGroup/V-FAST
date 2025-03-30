@@ -7,3 +7,5 @@ The platform integrates key components of the **PEER-PBEE** framework into a str
 
 **V-FAST** features a **graphical interface** that provides full visualization of inputs, intermediate computations, and final outputs, thereby improving usability and transparency. 👀🔍
 ![Banner2](https://github.com/ArtetaResearchGroup/V-FAST/blob/main/Banner2.jpg?raw=true)
+
+For more guidance on using V-FAST, check out our **[Video tutorials](https://github.com/ArtetaResearchGroup/V-FAST/tree/main/Tutorial%20V-FAST)**.
