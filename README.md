@@ -6,6 +6,9 @@ It enables the estimation of **fragility functions** for individual buildings an
 The platform integrates key components of the **PEER-PBEE** framework into a streamlined workflow that enhances interpretability and facilitates its application across **research**, **academic**, and **professional settings**.
 
 **V-FAST** features a **graphical interface** that provides full visualization of inputs, intermediate computations, and final outputs, thereby improving usability and transparency. 👀🔍
-![Banner2](https://github.com/ArtetaResearchGroup/V-FAST/blob/main/Banner2.jpg?raw=true)
 
 For more guidance on using V-FAST, check out our **[Video tutorials](https://github.com/ArtetaResearchGroup/V-FAST/tree/main/Tutorial%20V-FAST)**.
+
+![Banner2](https://github.com/ArtetaResearchGroup/V-FAST/blob/main/Banner2.jpg?raw=true)
+
+
