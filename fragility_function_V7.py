@@ -20,7 +20,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 import statistics
 from PyQt5.QtWidgets import QApplication
-
+from statsmodels.genmod.families.links import Probit
 
 
 # IMPORTAR FUNCIONES
@@ -122,7 +122,7 @@ def fragility_function_det(dataF_IM_EDP_Hz, j, tipo_bin, min_datos_bin, num_bins
         
         # Intenta hacer el ajuste, si no lo logra, entonces manda a la consola un error
         try:
-            sm_probit_Link = sm.genmod.families.links.probit
+            sm_probit_Link = sm.genmod.families.links.Probit
             x = np.log(fragility['IM_bin'])
             glm_binom = sm.GLM(Y, sm.add_constant(x), family=sm.families.Binomial(link=sm_probit_Link()))
             
@@ -142,8 +142,9 @@ def fragility_function_det(dataF_IM_EDP_Hz, j, tipo_bin, min_datos_bin, num_bins
     
     return parameters, matriz_plot, fragility, matriz_IM_EDP
 
-#%% FUNCIÓN PARA ESTIMAR CURVAS DE FRAGILIDAD PROBABILISTICAS
+#%% FUNCIÓN PARA ESTIMAR CURVAS DE FRAGILIDAD PROBABILISTICAS (NO USAR)
 # Esta funcion censura y solo ajusta con los datos censurados
+#OJO: esta funcion mantiene el N de gm por stripe en 100
 
 def fragility_function_prob(IM, EDP, thetas_DS, betas_DS, tipo_bin, min_datos_bin, num_bins_inicial, IM_max_graph, d_edp, edp_max):
     
@@ -403,6 +404,8 @@ def fragility_function_prob_collapseOptions(dataF_IM_EDP_Hz, EDP_cens, thetas_DS
     # Dataframe donde se guarda IM y P(DS>ds|EDP)*p(EDP|IM) de cada estado de daño
     DS_IM_data = pd.DataFrame()
     DS_IM_data['IM_bin'] = IM_bin_ref
+    DS_IM_data['Ntotal'] = collapse_count['#DatosTodos']
+    DS_IM_data['Ncens'] = collapse_count['#DatosTodos'] - collapse_count['#ColapsosCens']
     
     # Creación de columnas en el DataFrame por DS
     for i in range (num_DS):
@@ -514,11 +517,15 @@ def fragility_function_prob_collapseOptions(dataF_IM_EDP_Hz, EDP_cens, thetas_DS
 
     fragility = pd.DataFrame()
     fragility['IM_bin'] =  IM_bin_ref
-    fragility['N'] = 100
+    fragility['Ntotal'] = DS_IM_data['Ntotal']
+    fragility['Ncens'] = DS_IM_data['Ncens']
 
     # Estimación de Zi
     for k in range(num_DS):
-        fragility['Zi - DS' + str(k+1)] =  round(DS_IM_data['DS' + str(k+1)]*100)
+        if k < num_DS - 1:
+            fragility['Zi - DS' + str(k+1)] =  round(DS_IM_data['DS' + str(k+1)]*fragility['Ncens'])
+        else:
+            fragility['Zi - DS' + str(k+1)] =  round(DS_IM_data['DS' + str(k+1)]*fragility['Ntotal'])
     
     ################################################################
     # 6. CÁLCULO DE PARÁMETROS DE CURVAS DE FRAGILIDAD
@@ -546,8 +553,12 @@ def fragility_function_prob_collapseOptions(dataF_IM_EDP_Hz, EDP_cens, thetas_DS
         # Data a ajustar
         Y = pd.DataFrame()
         Y['Zi'] = fragility['Zi - DS' + str(i+1)]
-        Y['N-Zi'] = fragility['N'] - fragility['Zi - DS' + str(i+1)]
-        
+        # N depende de si es colapso o estados de no colapso
+        if i < num_DS - 1:
+            Y['N-Zi'] = fragility['Ncens'] - fragility['Zi - DS' + str(i+1)]
+        else:
+            Y['N-Zi'] = fragility['Ntotal'] - fragility['Zi - DS' + str(i+1)]
+            
         # --------------------------------------------------------------------
         # Determinación de los valores de los puntos que se tendrán en cuenta para estimar los parámetros
         Y2 = Y.copy()
@@ -572,7 +583,7 @@ def fragility_function_prob_collapseOptions(dataF_IM_EDP_Hz, EDP_cens, thetas_DS
         
         # Intenta hacer el ajuste, si no lo logra, entonces manda a la consola un error
         try:
-            sm_probit_Link = sm.genmod.families.links.probit
+            sm_probit_Link = sm.genmod.families.links.Probit
             x = np.log(fragility2['IM_bin'])
             glm_binom = sm.GLM(Y2, sm.add_constant(x), family=sm.families.Binomial(link=sm_probit_Link()))
             
@@ -1437,8 +1448,15 @@ def taxonomy_calculation(fname_resultsBuildings, T, taxonomy_list, matriz_filter
                     
                     DS_points_fragility = pd.DataFrame()
                     DS_points_fragility['IM_bin'] = fragility['IM_bin']
+                    DS_points_fragility['Ntotal'] = fragility['Ntotal']
+                    DS_points_fragility['Ncens'] = fragility['Ncens']
+                    
                     for i in range(cantidad_DS):
-                        DS_points_fragility['DS'+str(i+1)] = fragility['Zi - DS'+str(i+1)]/fragility['N']
+                        # Puntos: El N cambia dependiendo si es el DS ultimo de colapso o los de no colapso
+                        if i < cantidad_DS - 1:
+                            DS_points_fragility['DS'+str(i+1)] = fragility['Zi - DS'+str(i+1)]/fragility['Ncens']
+                        else:
+                            DS_points_fragility['DS'+str(i+1)] = fragility['Zi - DS'+str(i+1)]/fragility['Ntotal']
                     
                     # Guardado de puntos en diccionario de edificios que tambien contendrá de taxonomias completas
                     dict_buildings_points[building_folder_name] = DS_points_fragility
@@ -1474,9 +1492,7 @@ def taxonomy_calculation(fname_resultsBuildings, T, taxonomy_list, matriz_filter
                     
                     # Guardado de edificio actual en dataframe general
                     dataF_param_buildings = pd.concat([dataF_param_buildings, data_list], axis = 0, ignore_index = True)
-                
-                # Aunque no se genere fragilidad de una edificación en particular, la data sí se utiliza en la nube de puntos para la taxonomia
-                finally:
+                    
                     # Guardado de valores IM y EDP en dataframe para generar fragilidad de toda la taxonomia
                     current_IM_T_EDP = pd.DataFrame()
                     current_IM_T_EDP['IM'] = IM
@@ -1501,6 +1517,11 @@ def taxonomy_calculation(fname_resultsBuildings, T, taxonomy_list, matriz_filter
                     ventana_GUI.status_taxonomy.setText('T:'+str(cont_IM)+'/'+str(len(IM_T_list))+'; TAX:'+str(cont_tax)+'/'+str(len(taxonomy_list))+
                                                         '; BUILD:'+str(cont_build)+'/'+str(len(buildings_list)) + '-- COMPLETED BUILD: '+str(current_building))
                     QApplication.processEvents() # Forzar la actualización de la interfaz gráfica en cada iteración
+                
+                # # OJO: Aunque no se genere fragilidad de una edificación en particular, la data sí se utiliza en la nube de puntos para la taxonomia
+                # finally:
+                # CAMBIÓ: Subí lo que estaba aquí, para que edificio que no pueda generar curvas de frag, no sea incluido sus datos en el cálculo de la tax
+                    
             
             # El código se sale del loop de todas las edificaciones de una misma taxonomía para estimar fragilidad completa de esta
             
@@ -1551,8 +1572,15 @@ def taxonomy_calculation(fname_resultsBuildings, T, taxonomy_list, matriz_filter
                 
                 DS_points_fragility = pd.DataFrame()
                 DS_points_fragility['IM_bin'] = fragility['IM_bin']
+                DS_points_fragility['Ntotal'] = fragility['Ntotal']
+                DS_points_fragility['Ncens'] = fragility['Ncens']
+                
                 for i in range(cantidad_DS):
-                    DS_points_fragility['DS'+str(i+1)] = fragility['Zi - DS'+str(i+1)]/fragility['N']
+                    # Puntos: El N cambia dependiendo si es el DS ultimo de colapso o los de no colapso
+                    if i < cantidad_DS - 1:
+                        DS_points_fragility['DS'+str(i+1)] = fragility['Zi - DS'+str(i+1)]/fragility['Ncens']
+                    else:
+                        DS_points_fragility['DS'+str(i+1)] = fragility['Zi - DS'+str(i+1)]/fragility['Ntotal']
                 
                 # Guardado de puntos en diccionario de edificios que tambien contendrá de taxonomias completas
                 dict_buildings_points[current_taxonomy] = DS_points_fragility

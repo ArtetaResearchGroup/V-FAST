@@ -22,6 +22,7 @@ import math
 import statsmodels.api as sm
 from scipy import stats
 from scipy.stats import norm
+from statsmodels.genmod.families.links import Probit
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -1466,9 +1467,14 @@ class MiApp(QtWidgets.QMainWindow):
                       label = ds_tags_E1[i] + ' - ' + r"$\theta$" +' = ' + str(round(parameters_P_E1.at[i,'theta'],3)) + '  ' +
                       r"$\beta$"+' = ' + str(round(parameters_P_E1.at[i,'sigma'],3)))
             
-            # Puntos
-            self.grafica_SEOC_PROB_1.ax.plot(fragility_P_E1['IM_bin'], fragility_P_E1['Zi - DS' + str(i+1)]/fragility_P_E1['N'], color = color[i], 
-                      marker = 'o', linestyle='', markersize = 3)
+            # Puntos: El N cambia dependiendo si es el DS ultimo de colapso o los de no colapso
+            if i < num_DS_E1 - 1:
+                self.grafica_SEOC_PROB_1.ax.plot(fragility_P_E1['IM_bin'], fragility_P_E1['Zi - DS' + str(i+1)]/fragility_P_E1['Ncens'], color = color[i], 
+                          marker = 'o', linestyle='', markersize = 3)
+            else:
+                self.grafica_SEOC_PROB_1.ax.plot(fragility_P_E1['IM_bin'], fragility_P_E1['Zi - DS' + str(i+1)]/fragility_P_E1['Ntotal'], color = color[i], 
+                          marker = 'o', linestyle='', markersize = 3)
+                
 
         self.grafica_SEOC_PROB_1.ax.set_xlim(0, 2.5)
         self.grafica_SEOC_PROB_1.ax.set_xlabel(IM_name_graph_E1 + '(T = ' + str(T_E1) + 's) [g]', size = 10)
@@ -1638,9 +1644,13 @@ class MiApp(QtWidgets.QMainWindow):
                       label = ds_tags_E2[i] + ' - ' + r"$\theta$" +' = ' + str(round(parameters_P_E2.at[i,'theta'],3)) + '  ' +
                       r"$\beta$"+' = ' + str(round(parameters_P_E2.at[i,'sigma'],3)))
             
-            # Puntos
-            self.grafica_SEOC_PROB_2.ax.plot(fragility_P_E2['IM_bin'], fragility_P_E2['Zi - DS' + str(i+1)]/fragility_P_E2['N'], color = color[i], 
-                      marker = '^', linestyle='', markersize = 3)
+            # Puntos: El N cambia dependiendo si es el DS ultimo de colapso o los de no colapso
+            if i < num_DS_E1 - 1:
+                self.grafica_SEOC_PROB_2.ax.plot(fragility_P_E2['IM_bin'], fragility_P_E2['Zi - DS' + str(i+1)]/fragility_P_E2['Ncens'], color = color[i], 
+                          marker = '^', linestyle='', markersize = 3)
+            else:
+                self.grafica_SEOC_PROB_2.ax.plot(fragility_P_E2['IM_bin'], fragility_P_E2['Zi - DS' + str(i+1)]/fragility_P_E2['Ntotal'], color = color[i], 
+                          marker = '^', linestyle='', markersize = 3)
 
         self.grafica_SEOC_PROB_2.ax.set_xlim(0, 2.5)
         self.grafica_SEOC_PROB_2.ax.set_xlabel(IM_name_graph_E2 + '(T = ' + str(T_E2) + 's) [g]', size = 10)
@@ -1755,6 +1765,7 @@ class MiApp(QtWidgets.QMainWindow):
                              r"$\beta$"+' = ' + str(round(parameters_D_E2.iloc[i,2],3)))
                     self.grafica_comparison.ax.plot(fragility_D_E2['IM_bin'], fragility_D_E2['Zi - j = ' + str(j_E2[i])]/fragility_D_E2['N'], color = color[i], 
                              marker = '^', linestyle='', markersize = 3)
+                    
                 
             elif EDP_name_graph_E2 == "PFA":
                 for i in range (len(j_E2)):
@@ -1772,16 +1783,28 @@ class MiApp(QtWidgets.QMainWindow):
                 self.grafica_comparison.ax.plot(matriz_plot_P_E1['IM'], matriz_plot_P_E1['DS'+str(i+1)], color = color[i], 
                           label = ds_tags_E1[i] + ' - ' + r"$\theta$" +' = ' + str(round(parameters_P_E1.iloc[i,1],3)) + '  ' +
                           r"$\beta$"+' = ' + str(round(parameters_P_E1.iloc[i,2],3)))
-                self.grafica_comparison.ax.plot(fragility_P_E1['IM_bin'], fragility_P_E1['Zi - DS' + str(i+1)]/fragility_P_E1['N'], color = color[i], 
-                          marker = 'o', linestyle='', markersize = 3)
+                
+                # Puntos: El N cambia dependiendo si es el DS ultimo de colapso o los de no colapso
+                if i < num_DS_E1 - 1:
+                    self.grafica_comparison.ax.plot(fragility_P_E1['IM_bin'], fragility_P_E1['Zi - DS' + str(i+1)]/fragility_P_E1['Ncens'], color = color[i], 
+                              marker = 'o', linestyle='', markersize = 3)
+                else:
+                    self.grafica_comparison.ax.plot(fragility_P_E1['IM_bin'], fragility_P_E1['Zi - DS' + str(i+1)]/fragility_P_E1['Ntotal'], color = color[i], 
+                              marker = 'o', linestyle='', markersize = 3)
             
             # EDIFICIO 2
             for i in range (num_DS_E2):
                 self.grafica_comparison.ax.plot(matriz_plot_P_E2['IM'], matriz_plot_P_E2['DS'+str(i+1)], color = color[i], linestyle = 'dashed',
                           label = ds_tags_E2[i] + ' - ' + r"$\theta$" +' = ' + str(round(parameters_P_E2.iloc[i,1],3)) + '  ' +
                           r"$\beta$"+' = ' + str(round(parameters_P_E2.iloc[i,2],3)))
-                self.grafica_comparison.ax.plot(fragility_P_E2['IM_bin'], fragility_P_E2['Zi - DS' + str(i+1)]/fragility_P_E2['N'], color = color[i], 
-                          marker = '^', linestyle='', markersize = 3)
+                
+                # Puntos: El N cambia dependiendo si es el DS ultimo de colapso o los de no colapso
+                if i < num_DS_E1 - 1:
+                    self.grafica_comparison.ax.plot(fragility_P_E2['IM_bin'], fragility_P_E2['Zi - DS' + str(i+1)]/fragility_P_E2['Ncens'], color = color[i], 
+                              marker = '^', linestyle='', markersize = 3)
+                else:
+                    self.grafica_comparison.ax.plot(fragility_P_E2['IM_bin'], fragility_P_E2['Zi - DS' + str(i+1)]/fragility_P_E2['Ntotal'], color = color[i], 
+                              marker = '^', linestyle='', markersize = 3)
 
     
         self.grafica_comparison.ax.set_xlim(0, 2.5)
@@ -1884,8 +1907,14 @@ class MiApp(QtWidgets.QMainWindow):
                 self.grafica_combination.ax.plot(matriz_plot_comb['IM'], matriz_plot_comb['DS'+str(i+1)], color = color[i], 
                           label = ds_tags_E1[i] + ' - ' + r"$\theta$" +' = ' + str(round(parameters_comb.iloc[i,1],3)) + '  ' +
                           r"$\beta$"+' = ' + str(round(parameters_comb.iloc[i,2],3)))
-                self.grafica_combination.ax.plot(fragility_comb['IM_bin'], fragility_comb['Zi - DS' + str(i+1)]/fragility_comb['N'], color = color[i], 
-                          marker = 'X', linestyle='', markersize = 3)
+                
+                # Puntos: El N cambia dependiendo si es el DS ultimo de colapso o los de no colapso
+                if i < num_DS_E1 - 1:
+                    self.grafica_combination.ax.plot(fragility_comb['IM_bin'], fragility_comb['Zi - DS' + str(i+1)]/fragility_comb['Ncens'], color = color[i], 
+                              marker = 'X', linestyle='', markersize = 3)
+                else:
+                    self.grafica_combination.ax.plot(fragility_comb['IM_bin'], fragility_comb['Zi - DS' + str(i+1)]/fragility_comb['Ntotal'], color = color[i], 
+                              marker = 'X', linestyle='', markersize = 3)
                 
                 # Grafica de las otras dos curvas
                 self.grafica_combination.ax.plot(matriz_plot_P_E1['IM'], matriz_plot_P_E1['DS'+str(i+1)], color = color[i],alpha=0.3)
@@ -3467,11 +3496,15 @@ class MiApp(QtWidgets.QMainWindow):
             # Creación de la matriz fragility de la forma IM_BIN - N - Zi
             fragility = pd.DataFrame()
             fragility['IM_bin'] =  current_points['IM_bin']
-            fragility['N'] = 100
+            fragility['Ntotal'] =  current_points['Ntotal']
+            fragility['Ncens'] =  current_points['Ncens']
 
             # Estimación de Zi
             for k in range(num_ds):
-                fragility['Zi - DS' + str(k+1)] =  round(DS_IM_data['DS' + str(k+1)]*100)
+                if k < num_ds - 1:
+                    fragility['Zi - DS' + str(k+1)] =  round(DS_IM_data['DS' + str(k+1)]*fragility['Ncens'])
+                else:
+                    fragility['Zi - DS' + str(k+1)] =  round(DS_IM_data['DS' + str(k+1)]*fragility['Ntotal'])
                 
             # ---------------------------------------------------------------
             # Cálculo de parámetros de curvas de fragilidad
@@ -3481,7 +3514,13 @@ class MiApp(QtWidgets.QMainWindow):
                 # Data a ajustar
                 Y = pd.DataFrame()
                 Y['Zi'] = fragility['Zi - DS' + str(i+1)]
-                Y['N-Zi'] = fragility['N'] - fragility['Zi - DS' + str(i+1)]
+                
+                # N depende de si es colapso o estados de no colapso
+                if i < num_ds - 1:
+                    Y['N-Zi'] = fragility['Ncens'] - fragility['Zi - DS' + str(i+1)]
+                else:
+                    Y['N-Zi'] = fragility['Ntotal'] - fragility['Zi - DS' + str(i+1)]
+
                 Y['IM_bin'] = fragility['IM_bin']
                 
                 # --------------------------------------------------------------------
@@ -3518,7 +3557,7 @@ class MiApp(QtWidgets.QMainWindow):
                 
                 # --------------------------------------------------------------------
                 # Ajuste de curvas
-                sm_probit_Link = sm.genmod.families.links.probit
+                sm_probit_Link = sm.genmod.families.links.Probit
                 x = np.log(fragility2['IM_bin'])
                 glm_binom = sm.GLM(Y2, sm.add_constant(x), family=sm.families.Binomial(link=sm_probit_Link()))
                 
@@ -3758,11 +3797,16 @@ class MiApp(QtWidgets.QMainWindow):
             # Creación de la matriz fragility de la forma IM_BIN - N - Zi
             fragility = pd.DataFrame()
             fragility['IM_bin'] =  current_points['IM_bin']
-            fragility['N'] = 100
+            
+            fragility['Ntotal'] =  current_points['Ntotal']
+            fragility['Ncens'] =  current_points['Ncens']
 
             # Estimación de Zi
             for k in range(num_ds):
-                fragility['Zi - DS' + str(k+1)] =  round(DS_IM_data['DS' + str(k+1)]*100)
+                if k < num_ds - 1:
+                    fragility['Zi - DS' + str(k+1)] =  round(DS_IM_data['DS' + str(k+1)]*fragility['Ncens'])
+                else:
+                    fragility['Zi - DS' + str(k+1)] =  round(DS_IM_data['DS' + str(k+1)]*fragility['Ntotal'])
                 
             # ---------------------------------------------------------------
             # Cálculo de parámetros de curvas de fragilidad
@@ -3772,7 +3816,13 @@ class MiApp(QtWidgets.QMainWindow):
                 # Data a ajustar
                 Y = pd.DataFrame()
                 Y['Zi'] = fragility['Zi - DS' + str(i+1)]
-                Y['N-Zi'] = fragility['N'] - fragility['Zi - DS' + str(i+1)]
+                
+                # N depende de si es colapso o estados de no colapso
+                if i < num_ds - 1:
+                    Y['N-Zi'] = fragility['Ncens'] - fragility['Zi - DS' + str(i+1)]
+                else:
+                    Y['N-Zi'] = fragility['Ntotal'] - fragility['Zi - DS' + str(i+1)]
+                
                 Y['IM_bin'] = fragility['IM_bin']
                 
                 # --------------------------------------------------------------------
@@ -3809,7 +3859,7 @@ class MiApp(QtWidgets.QMainWindow):
                 
                 # --------------------------------------------------------------------
                 # Ajuste de curvas
-                sm_probit_Link = sm.genmod.families.links.probit
+                sm_probit_Link = sm.genmod.families.links.Probit
                 x = np.log(fragility2['IM_bin'])
                 glm_binom = sm.GLM(Y2, sm.add_constant(x), family=sm.families.Binomial(link=sm_probit_Link()))
                 
